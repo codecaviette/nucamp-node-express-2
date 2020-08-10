@@ -4,8 +4,11 @@ var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 
-var indexRouter = require('./routes/index');
-var usersRouter = require('./routes/users');
+var indexRouter = require('./routes/index');          // Created by Express Generator
+var usersRouter = require('./routes/users');          // Created by Express Generator
+const campsiteRouter = require('./routes/campsiteRouter');        // Importing file-based modules/routers with keyword "require"
+const promotionRouter = require('./routes/promotionRouter');      // Importing file-based modules/routers with keyword "require"
+const partnerRouter = require('./routes/partnerRouter');          // Importing file-based modules/routers with keyword "require"
 
 var app = express();
 
@@ -13,14 +16,18 @@ var app = express();
 app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
+// app.use is an Express middleware fxn that allows the app to use modules, whether they're core modules, file-based, or 3rd party
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);
+app.use('/', indexRouter);                // The index router has a filepath of '/' 
 app.use('/users', usersRouter);
+app.use('/campsites', campsiteRouter);
+app.use('/promotions', promotionRouter);
+app.use('/partners', partnerRouter);
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
