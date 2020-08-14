@@ -10,6 +10,20 @@ const campsiteRouter = require('./routes/campsiteRouter');        // Importing f
 const promotionRouter = require('./routes/promotionRouter');      // Importing file-based modules/routers with keyword "require"
 const partnerRouter = require('./routes/partnerRouter');          // Importing file-based modules/routers with keyword "require"
 
+// Connect this Express app to the MongoDB server thru Mongoose wrapper methods around MongoDB Node Driver 
+const mongoose = require('mongoose');                  // Require Mongoose module
+const url = 'mongodb://localhost:27017/nucampsite';    // url for MongoDB server
+const connect = mongoose.connect(url, {                // Set up connection. The connect method returns a Promise, so we can use .then and .catch to handle that.
+  useCreateIndex: true, 
+  useFindAndModify: true,
+  useNewUrlParser: true, 
+  useUnifiedTopology: true
+});
+
+connect.then(() => console.log('Connected correctly to server'),          // If Express app is able to connect to the MongoDB server, then it will log this msg. 
+  err => console.log(err)                                                 // otherwise it will give an error message. Instead of using the .catch method for this, you can instead insert the error handling as a second argument to .then method
+);
+
 var app = express();
 
 // view engine setup

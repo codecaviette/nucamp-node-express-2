@@ -2,60 +2,83 @@
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const Campsite = require('../models/campsite');             // Import campsite.js file
 
 // Create a new Express router by calling express.Router fxn and assigning it to a variable
 const campsiteRouter = express.Router();
 
 campsiteRouter.use(bodyParser.json());
 
-// Add support for 4 endpoints for requests to /campsites:
-campsiteRouter.route('/')                           // The path isn't '/campsites' like you'd expect bc it's defined in server.js on campsiteRouter line - it's located in server.js so server knows where to go
-                                                    // When moving Express routing methods out of single file and into a separate module, we'll now link the methods by removing "app" from "app.all" method, removing path '/campsites' from param list since it's now defined in server.js, and remove ; at end of block so methods are linked 
-.all((req, res, next) => {                          // It is best practice/standard with Node to link methods starting with .all (which will not explicitly be called, like .get, but is included when .get is called); Linking methods like this is for efficiency's sake. The request and response objects/streams are required; next is optional. 
-    res.statusCode = 200;                                  
-    res.setHeader('Content-type', 'text/plain');    // setHeader tells server what type of content we're sending to server, which in this case is text/plain
-    next();                                                
+// Add support for 4 endpoints for requests made to /campsites (PLURAL) path on MongoDB server
+campsiteRouter.route('/')                                   // The path isn't '/campsites' like you'd expect bc it's defined in server.js on campsiteRouter line - it's located in server.js so server knows where to go                                                    
+.get((req, res, next) => {                                  // If we get a request to this endpoint, it means the HTTP Client (ex web browser) is asking to send back data for all of the camnpsites 
+    Campsite.find()                                         // This is a static method avail via Campsite Model that will query DB for all docs that were instantiated using Campsite Model
+    .then(campsites => {                                    // Use the .then method to access the result from the .find method as "campsites"; once we have that result, we'll set the  following HTTP response settings: 
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(campsites);                                // This will send JSON data to client in response stream and auto close the response stream afterward so we can remove the res.end mthod from thsi block
+    })
+    .catch(err => next(err));                               // The "next" fxn passed as a param to the .get method is used to handle any errors; it passes errors to be handled by Express's built-in next method 
 })
-
-.get((req, res) => {                                // .get is reading data in database
-    res.end(`Will send all the campsites to you`);         
+.post((req, res, next) => {
+    Campsite.create(req.body)                               // Campsite.create method creates a new campsite document and saves to MongoDB server. The req.body arg shoudl include the data from client in the HTTP request object/stream. Mongoose will auto verify thsi data fits our Schema we defined, so we don't need to worry about that
+    .then(campsite => {                                     // If this request is successful, then it will create a new campsite document
+        console.log('Campsite Created ', campsite);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(campsite);
+    })
+    .catch(err => next(err));
 })
-
-.post((req, res) => {                                                                                       // .post is creating/adding data to database
-    res.end(`Will add the campsites: ${req.body.name} with description: ${req.body.description}`);          // Request object being sent has a body that has properties name and description 
+.put((req, res) => {
+    res.statusCode = 403;
+    res.end('PUT operation not supported on /campsites');
 })
+.delete((req, res, next) => {
+    Campsite.deleteMany()                                     // This will delete all campsite documents in the db on MongoDB server
+    .then(response => {                                       // The response will be a list of all deleted documents
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
+});
 
-.put((req, res) => {                                                // .put is updating data in database
-    res.statusCode = 403;                                           // This status code overrides what's defined above in .all 
-    res.end(`PUT operation not supported on /campsites`);
-})
-
-.delete((req, res) => {
-    res.end(`Deleting all campsites`);
-});                                                                 // Leave this semicolon since it's the end of the routing method statement
-
-
-// Add support for 4 endpoints for requests to /campsites/:campsiteId
-campsiteRouter.route('/:campsiteId')                           
-.all((req, res, next) => {                          
-    res.statusCode = 200;                                  
-    res.setHeader('Content-type', 'text/plain');    
-    next();                                                
-})
-.get((req, res) => {                      
-    res.end(`Will send details of the campsite: ${req.params.campsiteId} to you`);          // req.params.campsiteId: req is the req obj/stream, params is coming from built-in route params of the url, campsiteId is the property of the route params property
+// Add support for 4 endpoints for requests made to /campsites/:campsiteId (SINGULAR) path on MongoDB server
+campsiteRouter.route('/:campsiteId')
+.get((req, res, next) => {
+    Campsite.findById(req.params.campsiteId)                            // .findById method from Mongoose; req.params.campsiteId parses out the campsite ID from the request that was sent from HTTP client (ex. whatever ID user entered into website)
+    .then(campsite => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(campsite);
+    })
+    .catch(err => next(err));
 })
 .post((req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /campsites/${req.params.campsiteId}`);
 })
-.put((req, res) => {
-    res.write(`Updating the campsite: ${req.params.campsiteId}\n`);                                    // \n creates new line
-    res.end(`Will update the campsite: ${req.body.name} with description ${req.body.description}`);    // We're parsing out the body name and body description from the request object that was sent to us, rather than the campsite ID route paramater (like in the above)  
+.put((req, res, next) => {
+    Campsite.findByIdAndUpdate(req.params.campsiteId, {
+        $set: req.body
+    }, { new: true })
+    .then(campsite => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(campsite);
+    })
+    .catch(err => next(err));
 })
-.delete((req, res) => {
-    res.end(`Deleting campsite: ${req.params.campsiteId}`);                                 // This will only delete the selected campsite, rather than all of them as stated in the above delete method
-});               
+.delete((req, res, next) => {
+    Campsite.findByIdAndDelete(req.params.campsiteId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
+});
 
 
 // Export router so it can be used elsewhere in app
