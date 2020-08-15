@@ -2,55 +2,84 @@
 
 const express = require('express');                 // Import needed node modules
 const bodyParser = require('body-parser');
+const Promotion = require('../models/promotion');   // Import promotion.js file
 
-const promotionRouter = express.Router();           // Practically-speaking, it's better to use promotionsRouter rather than singular
+const promotionRouter = express.Router();           // Practically-speaking, it's better to use promotionsRouter (PLURAL) rather than singular
 
 promotionRouter.use(bodyParser.json());             // To use JSON data, you need to be able to parse it, and you can do that using JSON body-parser
 
-// Add support for 4 endpoints for /promotion path:
-promotionRouter.route("/")
-.all((req, res, next) => {                          // When starting line, just entering "." VS code will show you suggestions on commonly-used code there
-    res.statusCode = 200;                           // Even though req isn't used in this block, we still need it because method expects SOMETHING in that spot
-    res.setHeader("Content-Type", "text/plain");
-    next();
+// Add support/instructions for 4 endpoints (HTTP request + path) made to /promotion path (for ALL promo docs in Promo collection):
+promotionRouter
+.route('/')                                                     // The route for this endpoint is defined in app.js         
+.get((req, res, next) => {                                      // If we receive a GET request from the HTTP client, then do the following...
+    Promotion.find()                                            // Promotion is the Model and .find is a Mongoose method which allows us to find all promo docs created via Promotion Model                 
+    .then(promotions => {                                    
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotions);                                
+    })
+    .catch(err => next(err));                                   // Handle any errors with this HTTP GET request
 })
-.get((req, res) => {
-    res.end("Will send all promotions to you");
-})
-.post((req, res) => {
-    res.end(`Will add the promotions: ${req.body.name} and description: ${req.body.description} `);          // Info being sent is a request that is an object which has a property that is also an object called body, which has properties of name and description
-})
-.put((req, res) => {
-    res.statusCode = 403;                                                           // Bc we're working with ALL promos here, we do not want to allow updates since it would affect ALL promos rather than 1 which we'll do in the code below with /promotionsId
-    res.end("PUT operation not supported on /promotion endpoint");                   // Important for troubleshooting to include details about path/endpoint that is not being supported 
-})
-.delete((req, res) => {
-    res.end("Deleting all promotions");
-});
-
-
-// Add support for 4 endpoints for /promotion/:promotionId path:
-promotionRouter.route("/:promotionId")
-.all((req, res, next) => {                          // When starting line, just entering "." VS code will show you suggestions on commonly-used code there
-    res.statusCode = 200;                           // Even though req isn't used in this block, we still need it because method expects SOMETHING in that spot
-    res.setHeader("Content-Type", "text/plain");
-    next();
-})
-.get((req, res) => {
-    res.end(`Will send ${req.params.promotionId} promotion to you`)         // params is the route param of url
-})
-.post((req, res) => {
-    res.statusCode = 403;                                                   // This is coder's choice; could've handled differently by allowing a post/create
-    res.end("POST operation not supported on :promotionId endpoint")          
+.post((req, res, next) => {                                     // When we receive a POST request, then do the following...
+    Promotion.create(req.body)                                  // This method creates a new Promotion doc
+    .then(promotion => {                                     
+        console.log('Partner Created ', promotion);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err));
 })
 .put((req, res) => {
-    res.write(`Updating promotion ${req.params.promotionId}`);              // Here, we're only updating one promotion so as the coder, I'm choosing to allow this (vs promotions endpoints above)
-    res.end(`Will update ${req.body.name} with the description ${req.body.description}`)
+    res.statusCode = 403;
+    res.end('PUT operation not supported on /promotions');        // We do not allow this on the entire collection bc allowing it would mean that if we made an update to a name field, this would apply to ALL documents in Model
 })
-.delete((req, res) => {
-    res.end("Deleting this promotion")
+.delete((req, res, next) => {                                
+    Promotion.deleteMany()                                        // This method would delete all promotion docs in collection
+    .then(response => {                                      
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
+// Add support for 4 endpoints (HTTP request + path) made to /promotions/:promotionId (SINGULAR) path on MongoDB server
+promotionRouter
+.route('/:promotionId')
+.get((req, res, next) => {
+    Promotion.findById(req.params.promotionId)                            
+    .then(promotion => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err));
+})
+.post((req, res) => {
+    res.statusCode = 403;
+    res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
+})
+.put((req, res, next) => {
+    Promotion.findByIdAndUpdate(req.params.promotionId, {           // Find and update a specific promo doc
+        $set: req.body                                              // $set allows us to update a specific doc we found based on req.body
+    }, { new: true })
+    .then(promotion => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(promotion);
+    })
+    .catch(err => next(err));
+})
+.delete((req, res, next) => {
+    Promotion.findByIdAndDelete(req.params.promotionId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
+});
 
-//Export this router to be used elsewhere in app
+// Export all the above routes through (everything at /partners route) router so it can be used elsewhere in app
 module.exports = promotionRouter;

@@ -2,55 +2,84 @@
 
 const express = require('express');                 // Import needed node modules
 const bodyParser = require('body-parser');
+const Partner = require('../models/partner');       // Import partner.js file
 
 const partnerRouter = express.Router();             // Practically-speaking, it's better to use partnersRouter rather than singular
 
 partnerRouter.use(bodyParser.json());               // To use JSON data, you need to be able to parse it, and you can do that using JSON body-parser
 
-// Add support for 4 endpoints for /partner path:
-partnerRouter.route("/")
-.all((req, res, next) => {                          // When starting line, just entering "." VS code will show you suggestions on commonly-used code there
-    res.statusCode = 200;                           // Even though req isn't used in this block, we still need it because method expects SOMETHING in that spot
-    res.setHeader("Content-Type", "text/plain");
-    next();
+// Add support for 4 endpoints for /partner path (ALL partner docs in partner collection):
+partnerRouter
+.route('/')                                                     // The route for this endpoint is defined in app.js         
+.get((req, res, next) => {                                      // If we receive a GET request from the HTTP client, then do the following...
+    Partner.find()                                              // Partner is the Model and .find is a Mongoose method which allows us to find all partner docs created via Partner Model                 
+    .then(partners => {                                    
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(partners);                                
+    })
+    .catch(err => next(err));                                   // Handle any errors with this HTTP GET request
 })
-.get((req, res) => {
-    res.end("Will send all partners to you");
+.post((req, res, next) => {                                     // When we receive a POST request, then do the following...
+    Partner.create(req.body)                                    // This method creates a new Partner doc
+    .then(partner => {                                     
+        console.log('Partner Created ', partner);
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(partner);
+    })
+    .catch(err => next(err));
 })
-.post((req, res) => {
-    res.end(`Will add the partners: ${req.body.name} and description: ${req.body.description} `);          // Info being sent is a request that is an object which has a property that is also an object called body, which has properties of name and description
+.put((req, res) => {                                            // This is an update request
+    res.statusCode = 403;
+    res.end('PUT operation not supported on /partners');        // We do not allow this on the entire collection bc allowing it would mean that if we made an update to a name field, this would apply to ALL documents in Model
 })
-.put((req, res) => {
-    res.statusCode = 403;                                                           // Bc we're working with ALL partners here, we do not want to allow updates since it would affect ALL partners rather than 1 which we'll do in the code below with /partnerId
-    res.end("PUT operation not supported on /partners endpoint");                   // Important for troubleshooting to include details about path/endpoint that is not being supported 
-})
-.delete((req, res) => {
-    res.end("Deleting all partners");
+.delete((req, res, next) => {                                
+    Partner.deleteMany()                                        // This method would delete all partner docs in collection
+    .then(response => {                                      
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
-
-// Add support for 4 endpoints for /partners/:partnerId path:
-partnerRouter.route("/:partnerId")
-.all((req, res, next) => {                          // When starting line, just entering "." VS code will show you suggestions on commonly-used code there
-    res.statusCode = 200;                           // Even though req isn't used in this block, we still need it because method expects SOMETHING in that spot
-    res.setHeader("Content-Type", "text/plain");
-    next();
-})
-.get((req, res) => {
-    res.end(`Will send ${req.params.partnerId} partner to you`)         // params is the route param of url
+// Add support for 4 endpoints for requests made to /partners/:partnerId (SINGULAR) path on MongoDB server
+partnerRouter
+.route('/:partnerId')
+.get((req, res, next) => {
+    Partner.findById(req.params.partnerId)                            
+    .then(partner => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(partner);
+    })
+    .catch(err => next(err));
 })
 .post((req, res) => {
-    res.statusCode = 403;                                                   // This is coder's choice; could've handled differently by allowing a post/create
-    res.end("POST operation not supported on :partnerId endpoint")          
+    res.statusCode = 403;
+    res.end(`POST operation not supported on /partners/${req.params.partnerId}`);
 })
-.put((req, res) => {
-    res.write(`Updating partner ${req.params.partnerId}`);              // Here, we're only updating one partner so as the coder, I'm choosing to allow this (vs partners endpoints above)
-    res.end(`Will update ${req.body.name} with the description ${req.body.description}`)
+.put((req, res, next) => {
+    Partner.findByIdAndUpdate(req.params.partnerId, {               // Find and update a specific partner doc
+        $set: req.body                                              // $set allows us to update specific doc we found based on req.body
+    }, { new: true })
+    .then(partner => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(partner);
+    })
+    .catch(err => next(err));
 })
-.delete((req, res) => {
-    res.end("Deleting this partner")
+.delete((req, res, next) => {
+    Campsite.findByIdAndDelete(req.params.partnerId)
+    .then(response => {
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(response);
+    })
+    .catch(err => next(err));
 });
 
-
-//Export this router to be used elsewhere in app
+// Export all the above routes through (everything at /partners route) router so it can be used elsewhere in app
 module.exports = partnerRouter;
