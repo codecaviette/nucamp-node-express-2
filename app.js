@@ -35,6 +35,33 @@ app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
+
+// Set up authentication BEFORE static prop of express, so users must authenticate BEFORE they can access static data on server; otherwise, any user coulc access and update server data
+function auth(req, res, next) {                           // Define an Express Middleware function called "auth" which requires params: req, res, and (optional) next  
+  console.log(req.headers);                               // This will allow us to see what's in the request object's authorization header
+  const authHeader = req.headers.authorization;           // Grab just the authorization header out of the request headers and assign it to constant authHeader
+  if (!authHeader){                                       // If authHeader is null, this means we did not get any auth info in this request, so the user hasn't entered a username/password yet
+    const err = new Error('You are not authenticated');        // If no authHeader, then we'll throw an error message 
+    res.setHeader('WWW-Authenticate', 'Basic');                // then send a response header: 1st arg: Lets client know app is requesting authentication; 2nd arg: method being requested is basic
+    err.status = 401;                                          // Standard error status code for auth issues
+        return next(err);                                           // Pass error message to Express to handle sending the error message and auth request back to client
+    }
+    
+    const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');         // When there IS an authorization header, we can go here. Here, we'll parse the auth header and validate the username and password by making them the 1st and 2nd value in a new array
+    const user = auth[0];                                                                       // username is the 1st position of the auth array 
+    const pass = auth[1];                                                                       // password is the 2nd position of the auth array 
+    if (user === 'admin' && pass === 'password') {
+        return next(); // authorized                                                            // If the above is true, we're authorized!
+    } else {
+        const err = new Error('You are not authenticated!');
+        res.setHeader('WWW-Authenticate', 'Basic');      
+        err.status = 401;
+        return next(err);
+    }
+}
+
+app.use(auth);
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.use('/', indexRouter);                // The index router has a filepath of '/' 
