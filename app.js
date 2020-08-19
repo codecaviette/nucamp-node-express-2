@@ -36,12 +36,22 @@ app.set('view engine', 'jade');
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
-app.use(cookieParser('12345-67890-09876-54321'));                 // We "use" the imported cookie parser tool with a signed/encrypted cookie by providing it an argument which is a secret key (ie, a random number) 
+//app.use(cookieParser('12345-67890-09876-54321'));                 // We "use" the imported cookie parser tool with a signed/encrypted cookie by providing it an argument which is a secret key (ie, a random number) 
+                                                                    // Cannot use cookie parser and Express sessions together bc Express has its own cookie tool
+app.use(session({                                                   // Bring in and use session middleware
+  name: 'session-id',
+  secret: '12345-67890-09876-54321',
+  saveUninitialized: false,                                       // When a new session is created but no updates are made to it, then at the end of the request it won't get saved bc it's an empty session - thsi prevents creation of empty sessions. 
+  resave: false,                                                  // Resave means that once a session is created, updated, and saved, it will continue to be saved even if no changes are made 
+  store: new FileStore()                                          // This creates a new FileStore as an object that we can use to save our session info to the server's hard disk instaed of just the running app's memory
+}));
 
-// Set up authorization to check for signed cookie
+// Set up authorization to check for session
 function auth(req, res, next) {
-  if (!req.signedCookies.user) {                                  // If there's NO signed cookie. 
-      const authHeader = req.headers.authorization;               // The signedCookies property of req object (above) is provided by cookie parser tool and will parse a signed cookie from request. If it's not properly signed, will return value of false. We'll add user prop ourselves.
+  console.log(req.session);                                 // The session middleware will automatically add a property called "session" to request object - logging this shows us what we have access to
+
+  if (!req.session.user) {                                  // If there's NO session. 
+      const authHeader = req.headers.authorization;               
       if (!authHeader) {
           const err = new Error('You are not authenticated!');
           res.setHeader('WWW-Authenticate', 'Basic');
@@ -53,7 +63,7 @@ function auth(req, res, next) {
       const user = auth[0];
       const pass = auth[1];
       if (user === 'admin' && pass === 'password') {              // If user enters 'admin' and 'password' in username/password fields, then a cookie will be created by server for client.
-          res.cookie('user', 'admin', {signed: true});            // res.cookie method is a part of Express's response object's API, and we'll use it to create a new, signed cookie
+          req.session.use = 'admin';                              // Save to the session that the username is 'admin'
           return next(); // authorized
       } else {
           const err = new Error('You are not authenticated!');
@@ -62,7 +72,7 @@ function auth(req, res, next) {
           return next(err);
       }
   } else {
-      if (req.signedCookies.user === 'admin') {                   // If there IS a signed cookie that is 'admin'
+      if (req.session.user === 'admin') {                   // If there IS a session that is 'admin'
           return next();
       } else {
           const err = new Error('You are not authenticated!');
