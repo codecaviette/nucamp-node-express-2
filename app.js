@@ -63,8 +63,8 @@ function auth(req, res, next) {
       const user = auth[0];
       const pass = auth[1];
       if (user === 'admin' && pass === 'password') {              // If user enters 'admin' and 'password' in username/password fields, then a cookie will be created by server for client.
-          req.session.use = 'admin';                              // Save to the session that the username is 'admin'
-          return next(); // authorized
+          req.session.user = 'admin';                             // Save to the session that the username is 'admin'
+          return next();                                          // authorized
       } else {
           const err = new Error('You are not authenticated!');
           res.setHeader('WWW-Authenticate', 'Basic');
@@ -72,7 +72,7 @@ function auth(req, res, next) {
           return next(err);
       }
   } else {
-      if (req.session.user === 'admin') {                   // If there IS a session that is 'admin'
+      if (req.session.user === 'admin') {                         // If there IS a session that is 'admin'
           return next();
       } else {
           const err = new Error('You are not authenticated!');
