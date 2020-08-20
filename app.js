@@ -5,6 +5,8 @@ var cookieParser = require('cookie-parser');
 var logger = require('morgan');
 const session = require('express-session');
 const FileStore = require('session-file-store')(session);           // Need these two arguments to use the file store
+const passport = require('passport');
+const authenticate = require('./authenticate');
 
 var indexRouter = require('./routes/index');          // Created by Express Generator
 var usersRouter = require('./routes/users');          // Created by Express Generator
@@ -46,26 +48,22 @@ app.use(session({                                                   // Bring in 
   store: new FileStore()                                          // This creates a new FileStore as an object that we can use to save our session info to the server's hard disk instaed of just the running app's memory
 }));
 
+app.use(passport.initialize());         // These methods are only needed if you have session-based authentication.
+app.use(passport.session());
 
 app.use('/', indexRouter);                // The index router has a filepath of '/' 
 app.use('/users', usersRouter);
 
 // Set up authorization to check for session
 function auth(req, res, next) {
-  console.log(req.session);
+  console.log(req.user);
 
-  if (!req.session.user) {
+  if (!req.user) {
       const err = new Error('You are not authenticated!');
       err.status = 401;
       return next(err);
   } else {
-      if (req.session.user === 'authenticated') {
-          return next();
-      } else {
-          const err = new Error('You are not authenticated!');
-          err.status = 401;
-          return next(err);
-      }
+      return next();
   }
 }
 
