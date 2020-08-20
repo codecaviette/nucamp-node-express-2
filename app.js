@@ -46,33 +46,20 @@ app.use(session({                                                   // Bring in 
   store: new FileStore()                                          // This creates a new FileStore as an object that we can use to save our session info to the server's hard disk instaed of just the running app's memory
 }));
 
+
+app.use('/', indexRouter);                // The index router has a filepath of '/' 
+app.use('/users', usersRouter);
+
 // Set up authorization to check for session
 function auth(req, res, next) {
-  console.log(req.session);                                 // The session middleware will automatically add a property called "session" to request object - logging this shows us what we have access to
+  console.log(req.session);
 
-  if (!req.session.user) {                                  // If there's NO session. 
-      const authHeader = req.headers.authorization;               
-      if (!authHeader) {
-          const err = new Error('You are not authenticated!');
-          res.setHeader('WWW-Authenticate', 'Basic');
-          err.status = 401;
-          return next(err);
-      }
-
-      const auth = Buffer.from(authHeader.split(' ')[1], 'base64').toString().split(':');
-      const user = auth[0];
-      const pass = auth[1];
-      if (user === 'admin' && pass === 'password') {              // If user enters 'admin' and 'password' in username/password fields, then a cookie will be created by server for client.
-          req.session.user = 'admin';                             // Save to the session that the username is 'admin'
-          return next();                                          // authorized
-      } else {
-          const err = new Error('You are not authenticated!');
-          res.setHeader('WWW-Authenticate', 'Basic');
-          err.status = 401;
-          return next(err);
-      }
+  if (!req.session.user) {
+      const err = new Error('You are not authenticated!');
+      err.status = 401;
+      return next(err);
   } else {
-      if (req.session.user === 'admin') {                         // If there IS a session that is 'admin'
+      if (req.session.user === 'authenticated') {
           return next();
       } else {
           const err = new Error('You are not authenticated!');
@@ -86,8 +73,7 @@ app.use(auth);
 
 app.use(express.static(path.join(__dirname, 'public')));
 
-app.use('/', indexRouter);                // The index router has a filepath of '/' 
-app.use('/users', usersRouter);
+
 app.use('/campsites', campsiteRouter);
 app.use('/promotions', promotionRouter);
 app.use('/partners', partnerRouter);
