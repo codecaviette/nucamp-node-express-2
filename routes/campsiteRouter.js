@@ -15,6 +15,7 @@ campsiteRouter
 .route('/')                                                 // The path isn't '/campsites' like you'd expect bc it's defined in server.js on campsiteRouter line - it's located in server.js so server knows where to go                                                    
 .get((req, res, next) => {                                  // If we get a GET request to this endpoint, it means the HTTP Client (ex web browser) is asking to send back data for all of the camnpsites, so we will then call the Campsite.find method to pull all campsites docs and do the following code...
     Campsite.find()                                         // Campsite.find is a static method avail via Campsite Model (Campsite) and Mongoose (.find) that will query DB for all docs that were instantiated using Campsite Model
+    .populate('comments.author')
     .then(campsites => {                                    // Use the .then method to access the result from the .find method as "campsites"; once we have that result, we'll set the  following HTTP response settings: 
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
@@ -51,6 +52,7 @@ campsiteRouter
 .route('/:campsiteId')
 .get((req, res, next) => {
     Campsite.findById(req.params.campsiteId)                            // .findById method from Mongoose; req.params.campsiteId parses out the campsite ID from the request that was sent from HTTP client (ex. whatever ID user entered into website)
+    .populate('comments.author')
     .then(campsite => {
         res.statusCode = 200;
         res.setHeader('Content-Type', 'application/json');
@@ -88,6 +90,7 @@ campsiteRouter
 .route('/:campsiteId/comments')
 .get((req, res, next) => {
     Campsite.findById(req.params.campsiteId)
+    .populate('comments.author')
     .then(campsite => {
         // if (campsite) {                      // Bc we have the .catch method to handle any errors below, don't need this if/else to handle errors
             res.statusCode = 200;
@@ -105,6 +108,7 @@ campsiteRouter
     Campsite.findById(req.params.campsiteId)
     .then(campsite => {
         if (campsite) {
+            req.body.author = req.user._id;
             campsite.comments.push(req.body);
             campsite.save()
             .then(campsite => {
@@ -153,6 +157,7 @@ campsiteRouter
 .route('/:campsiteId/comments/:commentId')
 .get((req, res, next) => {
     Campsite.findById(req.params.campsiteId)
+    .populate('comments.author')
     .then(campsite => {
         if (campsite && campsite.comments.id(req.params.commentId)) {
             res.statusCode = 200;

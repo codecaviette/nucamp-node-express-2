@@ -6,6 +6,14 @@ const Schema = mongoose.Schema;
 
 // Create new Schema for user
 const userSchema = new Schema({
+    firstname: {
+        type: String,
+        default: ''
+    }, 
+    lastname: {
+        type: String, 
+        default: ''
+    },
     admin: {                            // No longer need to explicitly define username/password bc passport local mongoose will do that for us
         type: Boolean,
         default: false                  // When a new user doc is created, the admin flag will be set to false
