@@ -3,6 +3,7 @@
 const express = require('express');                 // Import needed node modules
 const bodyParser = require('body-parser');
 const Partner = require('../models/partner');       // Import partner.js file
+const authenticate = require('../authenticate');
 
 const partnerRouter = express.Router();             // Practically-speaking, it's better to use partnersRouter rather than singular
 
@@ -20,7 +21,7 @@ partnerRouter
     })
     .catch(err => next(err));                                   // Handle any errors with this HTTP GET request
 })
-.post((req, res, next) => {                                     // When we receive a POST request, then do the following...
+.post(authenticate.verifyUser, (req, res, next) => {                                     // When we receive a POST request, then do the following...
     Partner.create(req.body)                                    // This method creates a new Partner doc
     .then(partner => {                                     
         console.log('Partner Created ', partner);
@@ -30,11 +31,11 @@ partnerRouter
     })
     .catch(err => next(err));
 })
-.put((req, res) => {                                            // This is an update request
+.put(authenticate.verifyUser, (req, res) => {                                            // This is an update request
     res.statusCode = 403;
     res.end('PUT operation not supported on /partners');        // We do not allow this on the entire collection bc allowing it would mean that if we made an update to a name field, this would apply to ALL documents in Model
 })
-.delete((req, res, next) => {                                
+.delete(authenticate.verifyUser, (req, res, next) => {                                
     Partner.deleteMany()                                        // This method would delete all partner docs in collection
     .then(response => {                                      
         res.statusCode = 200;
@@ -56,11 +57,11 @@ partnerRouter
     })
     .catch(err => next(err));
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /partners/${req.params.partnerId}`);
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
     Partner.findByIdAndUpdate(req.params.partnerId, {               // Find and update a specific partner doc
         $set: req.body                                              // $set allows us to update specific doc we found based on req.body
     }, { new: true })
@@ -71,7 +72,7 @@ partnerRouter
     })
     .catch(err => next(err));
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Campsite.findByIdAndDelete(req.params.partnerId)
     .then(response => {
         res.statusCode = 200;

@@ -3,6 +3,7 @@
 const express = require('express');                 // Import needed node modules
 const bodyParser = require('body-parser');
 const Promotion = require('../models/promotion');   // Import promotion.js file
+const authenticate = require('../authenticate');
 
 const promotionRouter = express.Router();           // Practically-speaking, it's better to use promotionsRouter (PLURAL) rather than singular
 
@@ -20,7 +21,7 @@ promotionRouter
     })
     .catch(err => next(err));                                   // Handle any errors with this HTTP GET request
 })
-.post((req, res, next) => {                                     // When we receive a POST request, then do the following...
+.post(authenticate.verifyUser, (req, res, next) => {                                     // When we receive a POST request, then do the following...
     Promotion.create(req.body)                                  // This method creates a new Promotion doc
     .then(promotion => {                                     
         console.log('Partner Created ', promotion);
@@ -30,11 +31,11 @@ promotionRouter
     })
     .catch(err => next(err));
 })
-.put((req, res) => {
+.put(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end('PUT operation not supported on /promotions');        // We do not allow this on the entire collection bc allowing it would mean that if we made an update to a name field, this would apply to ALL documents in Model
 })
-.delete((req, res, next) => {                                
+.delete(authenticate.verifyUser, (req, res, next) => {                                
     Promotion.deleteMany()                                        // This method would delete all promotion docs in collection
     .then(response => {                                      
         res.statusCode = 200;
@@ -56,11 +57,11 @@ promotionRouter
     })
     .catch(err => next(err));
 })
-.post((req, res) => {
+.post(authenticate.verifyUser, (req, res) => {
     res.statusCode = 403;
     res.end(`POST operation not supported on /promotions/${req.params.promotionId}`);
 })
-.put((req, res, next) => {
+.put(authenticate.verifyUser, (req, res, next) => {
     Promotion.findByIdAndUpdate(req.params.promotionId, {           // Find and update a specific promo doc
         $set: req.body                                              // $set allows us to update a specific doc we found based on req.body
     }, { new: true })
@@ -71,7 +72,7 @@ promotionRouter
     })
     .catch(err => next(err));
 })
-.delete((req, res, next) => {
+.delete(authenticate.verifyUser, (req, res, next) => {
     Promotion.findByIdAndDelete(req.params.promotionId)
     .then(response => {
         res.statusCode = 200;
