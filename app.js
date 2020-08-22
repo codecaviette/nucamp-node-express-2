@@ -36,6 +36,7 @@ app.set('views', path.join(__dirname, 'views'));
 app.set('view engine', 'jade');
 
 // app.use is an Express middleware fxn that allows the app to use modules, whether they're core modules, file-based, or 3rd party
+// ORDER of app.use methods matters because they're executed sequentially
 app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));

@@ -21,7 +21,7 @@ partnerRouter
     })
     .catch(err => next(err));                                   // Handle any errors with this HTTP GET request
 })
-.post(authenticate.verifyUser, (req, res, next) => {                                     // When we receive a POST request, then do the following...
+.post(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {                                     // When we receive a POST request, then do the following...
     Partner.create(req.body)                                    // This method creates a new Partner doc
     .then(partner => {                                     
         console.log('Partner Created ', partner);
@@ -35,7 +35,7 @@ partnerRouter
     res.statusCode = 403;
     res.end('PUT operation not supported on /partners');        // We do not allow this on the entire collection bc allowing it would mean that if we made an update to a name field, this would apply to ALL documents in Model
 })
-.delete(authenticate.verifyUser, (req, res, next) => {                                
+.delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {                                
     Partner.deleteMany()                                        // This method would delete all partner docs in collection
     .then(response => {                                      
         res.statusCode = 200;
@@ -61,7 +61,7 @@ partnerRouter
     res.statusCode = 403;
     res.end(`POST operation not supported on /partners/${req.params.partnerId}`);
 })
-.put(authenticate.verifyUser, (req, res, next) => {
+.put(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     Partner.findByIdAndUpdate(req.params.partnerId, {               // Find and update a specific partner doc
         $set: req.body                                              // $set allows us to update specific doc we found based on req.body
     }, { new: true })
@@ -72,7 +72,7 @@ partnerRouter
     })
     .catch(err => next(err));
 })
-.delete(authenticate.verifyUser, (req, res, next) => {
+.delete(authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {
     Campsite.findByIdAndDelete(req.params.partnerId)
     .then(response => {
         res.statusCode = 200;

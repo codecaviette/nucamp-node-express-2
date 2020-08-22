@@ -7,8 +7,14 @@ const authenticate = require('../authenticate');
 const router = express.Router();
 
 // GET users listing
-router.get('/', function(req, res, next) {
-  res.send('respond with a resource');
+router.get('/', authenticate.verifyUser, authenticate.verifyAdmin, (req, res, next) => {          // Allow only admins to get to this path
+  User.find()                                         
+    .then((users) => {                                    
+        res.statusCode = 200;
+        res.setHeader('Content-Type', 'application/json');
+        res.json(users);                                      // res.json returns the actual data            
+    })
+    .catch(err => next(err));                               
 });
 
 // Add support for new endpoints (HTTP request + filpath)
@@ -23,26 +29,14 @@ router.post('/signup', (req, res) => {                // Post request. 1st arg: 
         res.setHeader('Content-Type', 'application/json');
         res.json({err: err});
       } else {
-          if (req.body.firstname){
-            user.firstname = req.body.firstname;
-          }
-          if(req.body.lastname) {
-            user.lastname = req.body.lastname;
-          }
-          user.save(err => {
-            if (err) {
-                res.statusCode = 500;
-                res.setHeader('Content-Type', 'application/json');
-                res.json({err: err});
-                return;
-            }
-            passport.authenticate('local')(req, res, () => {
-                res.statusCode = 200;
-                res.setHeader('Content-Type', 'application/json');
-                res.json({success: true, status: 'Registration Successful!'});
-            });
+        passport.authenticate('local')(req, res, () => {
+            res.statusCode = 200;
+            res.setHeader('Content-Type', 'application/json');
+            res.json({success: true, status: 'Registration Successful!'});
         });
+      }
     }
+  );
 });
 
 // Use Passport middleware to handle POST request to this login filepath
@@ -65,4 +59,4 @@ router.get('/logout', (req, res, next) => {
   }
 });
 
-module.exports = router;
+module.exports = router; 
