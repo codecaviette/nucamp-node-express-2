@@ -15,6 +15,7 @@ const campsiteRouter = require('./routes/campsiteRouter');        // Importing f
 const promotionRouter = require('./routes/promotionRouter');      // Importing file-based modules/routers with keyword "require"
 const partnerRouter = require('./routes/partnerRouter');          // Importing file-based modules/routers with keyword "require"
 const uploadRouter = require('./routes/uploadRouter');
+const favoriteRouter = require('./routes/favoriteRouter');
 
 // Connect this Express app to the MongoDB server thru Mongoose wrapper methods around MongoDB Node Driver 
 const mongoose = require('mongoose');                  // Require Mongoose module
@@ -54,7 +55,7 @@ app.use(express.urlencoded({ extended: false }));
 //app.use(cookieParser('12345-67890-09876-54321'));                 // We "use" the imported cookie parser tool with a signed/encrypted cookie by providing it an argument which is a secret key (ie, a random number) 
                                                                     // Cannot use cookie parser and Express sessions together bc Express has its own cookie tool
 
-app.use(passport.initialize());         // These methods are only needed if you have session-based authentication.
+app.use(passport.initialize());           // These methods are only needed if you have session-based authentication.
 
 app.use('/', indexRouter);                // The index router has a filepath of '/' 
 app.use('/users', usersRouter);
@@ -65,6 +66,7 @@ app.use('/campsites', campsiteRouter);
 app.use('/promotions', promotionRouter);
 app.use('/partners', partnerRouter);
 app.use('/imageUpload', uploadRouter);
+app.use('/favorites', favoriteRouter);     // This should come after campsites and users since it uses both
 
 // catch 404 and forward to error handler
 app.use(function(req, res, next) {
